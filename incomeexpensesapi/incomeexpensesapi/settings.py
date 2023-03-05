@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'authentication',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -135,7 +136,7 @@ EMAIL_PORT = 587
 # EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 # EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 EMAIL_HOST_USER="tsendemail1@gmail.com"
-EMAIL_HOST_PASSWORD="tsendemail12345"
+EMAIL_HOST_PASSWORD="jmlhgwdcwhtgdhyr"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
