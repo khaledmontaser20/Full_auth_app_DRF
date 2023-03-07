@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 # from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
 
-class RegisterSerializer(serializers.ModelSerializer):
+class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         max_length=68, min_length=6, write_only=True)
 
@@ -30,7 +30,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        user = User.objects.create_user(**validated_data)
+        user.is_active = False  
+        user.save()
+        return user
+    
+
+
+class UserRegisterWithoutVerificationSerializer(UserRegisterSerializer):
+    """Serializer for user registration without verification email"""
+
+    def create(self, validated_data):
+        user = super().create(validated_data)
+        user.is_active = True  # Set user as active
+        user.is_verified = True  # Set user as active
+        user.save()
+        return user
     
 
 class EmailVerificationSerializer(serializers.ModelSerializer):

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics, status, views, permissions
-from .serializers import RegisterSerializer, EmailVerificationSerializer, LoginSerializer
-# from .serializers import RegisterSerializer, SetNewPasswordSerializer, ResetPasswordEmailRequestSerializer, EmailVerificationSerializer, LoginSerializer, LogoutSerializer
+from .serializers import UserRegisterSerializer, EmailVerificationSerializer, LoginSerializer, UserRegisterWithoutVerificationSerializer
+# from .serializers import UserRegisterSerializer, SetNewPasswordSerializer, ResetPasswordEmailRequestSerializer, EmailVerificationSerializer, LoginSerializer, LogoutSerializer
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
@@ -13,14 +13,17 @@ from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi 
 from .renderers import UserRenderer
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import AccessToken
 
 
 
 
 
-class RegisterView(generics.GenericAPIView):
 
-    serializer_class = RegisterSerializer
+class UserRegisterView(generics.GenericAPIView):
+
+    serializer_class = UserRegisterSerializer
     renderer_classes = (UserRenderer,)
 
     def post(self, request):
@@ -28,6 +31,7 @@ class RegisterView(generics.GenericAPIView):
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        # -----------------------------------
         user_data = serializer.data
         user = User.objects.get(email=user_data['email'])
         token = RefreshToken.for_user(user).access_token
@@ -42,26 +46,67 @@ class RegisterView(generics.GenericAPIView):
         return Response(user_data, status=status.HTTP_201_CREATED)
     
 
-class VerifyEmail(views.APIView):
-    serializer_class = EmailVerificationSerializer
+class UserRegisterWithoutVerificationView(generics.CreateAPIView):
+    """View for user registration without verification email"""
 
-    token_param_config = openapi.Parameter(
-        'token', in_=openapi.IN_QUERY, description='Description', type=openapi.TYPE_STRING)
+    serializer_class = UserRegisterWithoutVerificationSerializer
+    permission_classes = [AllowAny]
 
-    @swagger_auto_schema(manual_parameters=[token_param_config])
+
+class VerifyEmailView(generics.GenericAPIView):
+    """View for verifying user's email address"""
+
+    permission_classes = [AllowAny]
+
     def get(self, request):
+        # try:
+        #     user_id = AccessToken(token).payload['user_id']
+        #     user = User.objects.get(id=user_id)
+        #     user.is_active = True
+        #     user.is_verified = True
+        #     user.save()
+        #     return Response({'email': 'Successfully activated'}, status=status.HTTP_200_OK)
+        # except jwt.ExpiredSignatureError as identifier:
+        #     return Response({'error': 'Activation Expired'}, status=status.HTTP_400_BAD_REQUEST)
+        # except jwt.exceptions.DecodeError as identifier:
+        #     return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
         token = request.GET.get('token')
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user = User.objects.get(id=payload['user_id'])
-            if not user.is_verified:
-                user.is_verified = True
-                user.save()
+            # if not user.is_verified:
+            user.is_active = True
+            user.is_verified = True
+            user.save()
             return Response({'email': 'Successfully activated'}, status=status.HTTP_200_OK)
         except jwt.ExpiredSignatureError as identifier:
             return Response({'error': 'Activation Expired'}, status=status.HTTP_400_BAD_REQUEST)
         except jwt.exceptions.DecodeError as identifier:
             return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+# class VerifyEmail(views.APIView):
+#     serializer_class = EmailVerificationSerializer
+
+#     token_param_config = openapi.Parameter(
+#         'token', in_=openapi.IN_QUERY, description='Description', type=openapi.TYPE_STRING)
+
+#     @swagger_auto_schema(manual_parameters=[token_param_config])
+#     def get(self, request):
+#         token = request.GET.get('token')
+#         try:
+#             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+#             user = User.objects.get(id=payload['user_id'])
+#             if not user.is_verified:
+#                 user.is_verified = True
+#                 user.save()
+#             return Response({'email': 'Successfully activated'}, status=status.HTTP_200_OK)
+#         except jwt.ExpiredSignatureError as identifier:
+#             return Response({'error': 'Activation Expired'}, status=status.HTTP_400_BAD_REQUEST)
+#         except jwt.exceptions.DecodeError as identifier:
+#             return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
         
 
 class LoginAPIView(generics.GenericAPIView):
