@@ -7,22 +7,52 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_str, force_str, smart_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils import timezone
+
+import re
+
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        max_length=68, min_length=6, write_only=True)
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
 
     default_error_messages = {
         'username': 'The username should only contain alphanumeric characters'}
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password']
+        fields = ['email', 'username', 'password', 'confirm_password']
 
     def validate(self, attrs):
         email = attrs.get('email', '')
         username = attrs.get('username', '')
+        password = attrs.get('password')
+        confirm_password = attrs.get('confirm_password')
+        # --------------------------------------
+        if not re.search("[A-Z]", password):
+            raise serializers.ValidationError(
+                "The password should contain at least one uppercase letter.")
+
+        if not re.search("[a-z]", password):
+            raise serializers.ValidationError(
+                "The password should contain at least one lowercase letter.")
+
+        if not re.search("[!@#$%^&*()_+-={};:'\"|,.<>?]", password):
+            raise serializers.ValidationError(
+                "The password should contain at least one special character.")
+
+        if re.search("\\d{3}", password):
+            raise serializers.ValidationError(
+                "The password should not contain a sequence of three or more numbers.")
+
+        if len(password) > 10:
+            raise serializers.ValidationError(
+                "The password should be less than 10 characters.")
+        # ----------------------------------------
+
+        if password != confirm_password:
+            raise serializers.ValidationError("The passwords do not match.")
 
         if not username.isalnum():
             raise serializers.ValidationError(
@@ -56,7 +86,11 @@ class UserRegisterWithoutVerificationSerializer(UserRegisterSerializer):
 #         fields = ['token']
 
 
-
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
+         
 class LoginSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255, min_length=3)
     password = serializers.CharField(
@@ -94,6 +128,8 @@ class LoginSerializer(serializers.ModelSerializer):
             raise AuthenticationFailed('Account disabled, contact admin')
         if not user.is_verified:
             raise AuthenticationFailed('Email is not verified')
+        user.last_login = timezone.now()
+        user.save()
 
         return {
             'email': user.email,

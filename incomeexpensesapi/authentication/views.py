@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import generics, status, views, permissions
-from .serializers import UserRegisterSerializer, LoginSerializer, UserRegisterWithoutVerificationSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, LogoutSerializer
+from .serializers import UserRegisterSerializer, LoginSerializer, UserRegisterWithoutVerificationSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, LogoutSerializer, UserSerializer
 # from .serializers import UserRegisterSerializer, SetNewPasswordSerializer, ResetPasswordEmailRequestSerializer, EmailVerificationSerializer, LoginSerializer, LogoutSerializer
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -27,6 +27,10 @@ class CustomRedirect(HttpResponsePermanentRedirect):
 
     allowed_schemes = [os.environ.get('APP_SCHEME'), 'http', 'https']
 
+
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 class UserRegisterView(generics.GenericAPIView):
 
@@ -65,18 +69,10 @@ class VerifyEmailView(generics.GenericAPIView):
 
     permission_classes = [AllowAny]
 
+    def get_serializer_class(self):
+        return None
+
     def get(self, request):
-        # try:
-        #     user_id = AccessToken(token).payload['user_id']
-        #     user = User.objects.get(id=user_id)
-        #     user.is_active = True
-        #     user.is_verified = True
-        #     user.save()
-        #     return Response({'email': 'Successfully activated'}, status=status.HTTP_200_OK)
-        # except jwt.ExpiredSignatureError as identifier:
-        #     return Response({'error': 'Activation Expired'}, status=status.HTTP_400_BAD_REQUEST)
-        # except jwt.exceptions.DecodeError as identifier:
-        #     return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
         token = request.GET.get('token')
         try:
@@ -217,3 +213,7 @@ class LogoutAPIView(generics.GenericAPIView):
         serializer.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+
+
