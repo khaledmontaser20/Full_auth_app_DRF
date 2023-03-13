@@ -1,4 +1,5 @@
 from django.db import models
+import uuid
 
 # Create your models here.
 from django.contrib.auth.models import (
@@ -38,6 +39,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(max_length=255, unique=True, db_index=True)
     email = models.EmailField(max_length=255, unique=True, db_index=True)
     is_verified = models.BooleanField(default=False)
@@ -45,7 +47,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    confirm_password = models.CharField(_("password"), max_length=128)
+    confirm_password = models.CharField(_("confirm_password"), max_length=128)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

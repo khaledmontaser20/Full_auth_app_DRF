@@ -8,14 +8,14 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_str, force_str, smart_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils import timezone
-
-import re
+from .validators import validate_password
+# import re
 
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-    confirm_password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+    confirm_password = serializers.CharField(write_only=True, validators=[validate_password])
 
     default_error_messages = {
         'username': 'The username should only contain alphanumeric characters'}
@@ -29,27 +29,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         username = attrs.get('username', '')
         password = attrs.get('password')
         confirm_password = attrs.get('confirm_password')
-        # --------------------------------------
-        if not re.search("[A-Z]", password):
-            raise serializers.ValidationError(
-                "The password should contain at least one uppercase letter.")
-
-        if not re.search("[a-z]", password):
-            raise serializers.ValidationError(
-                "The password should contain at least one lowercase letter.")
-
-        if not re.search("[!@#$%^&*()_+-={};:'\"|,.<>?]", password):
-            raise serializers.ValidationError(
-                "The password should contain at least one special character.")
-
-        if re.search("\\d{3}", password):
-            raise serializers.ValidationError(
-                "The password should not contain a sequence of three or more numbers.")
-
-        if len(password) > 10:
-            raise serializers.ValidationError(
-                "The password should be less than 10 characters.")
-        # ----------------------------------------
+        
 
         if password != confirm_password:
             raise serializers.ValidationError("The passwords do not match.")
@@ -111,7 +91,7 @@ class LoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'password', 'username', 'tokens']
-
+        
     def validate(self, attrs):
         email = attrs.get('email', '')
         password = attrs.get('password', '')
@@ -138,7 +118,57 @@ class LoginSerializer(serializers.ModelSerializer):
         }
 
         return super().validate(attrs)
-    
+
+    # def validate(self, attrs):
+    #     email = attrs.get('email', '')
+    #     password = attrs.get('password', '')
+    #     # filtered_user_by_email = User.objects.filter(email=email)
+    #     user = auth.authenticate(email=email, password=password)
+
+    #     # if filtered_user_by_email.exists() and filtered_user_by_email[0].auth_provider != 'email':
+    #     #     raise AuthenticationFailed(
+    #     #         detail='Please continue your login using ' + filtered_user_by_email[0].auth_provider)
+    #     if user and user.is_active:
+    #         user.last_login = timezone.now()
+    #         user.save()
+
+    #         return {
+    #             'email': user.email,
+    #             'username': user.username,
+    #             'tokens': user.tokens
+    #         }
+
+    #         return super().validate(attrs)
+
+    #     else:
+    #         if not user:
+    #             raise AuthenticationFailed('User does not exist')
+    #         elif not user.is_active:
+    #             raise AuthenticationFailed('Account is disabled contact the admin')
+    #         else:
+    #             raise AuthenticationFailed('Invalid credentials, try again')
+        
+    # --------------------------------------------------------------------------------------
+    # def validate(self, attrs):
+    #     email = attrs.get('email', '')
+    #     password = attrs.get('password', '')
+    #     user = User.objects.filter(email=email).first()
+
+    #     if user and user.is_active and auth.check_password(password, user.password):
+    #         user.last_login = timezone.now()
+    #         user.save()
+    #         return {
+    #             'email': user.email,
+    #             'username': user.username,
+    #             'tokens': user.tokens
+    #         }
+    #     else:
+    #         if not user:
+    #             raise AuthenticationFailed('User does not exist')
+    #         elif not user.is_active:
+    #             raise AuthenticationFailed('Account is disabled contact the admin')
+    #         else:
+    #             raise AuthenticationFailed('Invalid credentials, try again')
 
 
 

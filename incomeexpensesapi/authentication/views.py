@@ -23,6 +23,7 @@ import os
 from django.http import HttpResponsePermanentRedirect
 
 
+
 class CustomRedirect(HttpResponsePermanentRedirect):
 
     allowed_schemes = [os.environ.get('APP_SCHEME'), 'http', 'https']
